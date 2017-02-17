@@ -40,7 +40,7 @@ class Main {
      */
 
     public static char[] readFile() throws IOException{
-        File file = new File("/home/snigdhc/Projects/AST/src/main/java/Main.java");
+        File file = new File("/home/snigdhc/Projects/AST/src/main/java/SampleCode.java");
         FileReader fileReader;
         fileReader = new FileReader(file);
         int size = (int) file.length();
