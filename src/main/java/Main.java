@@ -12,10 +12,9 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import scala.util.parsing.json.JSON;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 
 import java.util.*;
 
@@ -32,6 +31,18 @@ class Main {
      */
     private static List parameterList;
     private static HashMap<String, String> parameterTypeMap;
+
+    public void copyingFilesFromHDFS() throws IOException,InterruptedException{
+        String cmd = "man pipe";
+        Runtime run = Runtime.getRuntime();
+        Process pr = run.exec(cmd);
+        pr.waitFor();
+        BufferedReader buf = new BufferedReader(new InputStreamReader(pr.getInputStream()));
+        String line = "";
+        while ((line = buf.readLine()) != null) {
+            System.out.println(line);
+        }
+    }
 
     /**
      * Reading the Input File to be parsed
@@ -53,6 +64,7 @@ class Main {
 
         return (filecontent);
     }
+
 
     public void settingParsers(ASTParser parser){
         parser.setResolveBindings(true);
@@ -174,10 +186,11 @@ class Main {
 
         cu.accept(new ASTVisitor() {
 
+
             Set names = new HashSet();
 
             public boolean visit(MethodDeclaration node) {
-
+                //System.out.println(cu.get);
                 System.out.println();
                 SimpleName name = node.getName();
                 this.names.add(name.getIdentifier());
