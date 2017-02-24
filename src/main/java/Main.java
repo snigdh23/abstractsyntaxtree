@@ -12,7 +12,6 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import scala.util.parsing.json.JSON;
 
 import java.io.*;
 
@@ -74,7 +73,9 @@ class Main {
     }
 
 
-    public void mapParameterNameToType(List paramList, HashMap<String, String> paramterTypeMap, MethodDeclaration node){
+    public void mapParameterNameToType(List paramList, HashMap<String, String> paramterTypeMap,
+                                       MethodDeclaration node){
+
         for (int i = 0; i < paramList.size(); i++) {
             String parameterName = paramList.get(i).toString();
             String parameterType = ((SingleVariableDeclaration) node.parameters().get(i)).getType().toString();
@@ -84,16 +85,17 @@ class Main {
         } // End of paramterlist for loop
     }
 
-    public void checkingMethodInvocation(MethodDeclaration node,final HashMap<String, List<String>> innerMap,final CompilationUnit compilationUnit,final HashMap<String,List<Integer>> methodUsage){
+    public void checkingMethodInvocation(MethodDeclaration node,final HashMap<String, HashMap<String, List<Integer>>> innerMap,
+                                         final CompilationUnit compilationUnit,final HashMap<String,List<Integer>> methodUsage){
         Block block = node.getBody();
         block.accept(new ASTVisitor() {
             public boolean visit(MethodInvocation node) {
 
                 List<String> methodList = new ArrayList<>();
+                HashMap<String,List<Integer>> mL = new HashMap<>();
                 List<Integer> methodUsageList = new ArrayList<>();
 
                 Expression parameterName = node.getExpression();
-
 
                 if (parameterName != null) {
 
@@ -101,13 +103,13 @@ class Main {
                     String methodName=(node.getName().toString());
 
                     if(!innerMap.containsKey(parameterType)){
-                        innerMap.put(parameterType,methodList);
+                        //innerMap.put(parameterType,methodList);
                     }
 
 
                     if (parameterType != null) {
                         if (innerMap.containsKey(parameterType)) {
-                            if ((parameterTypeMap.containsKey(parameterName.toString())) && (Objects.equals(parameterTypeMap.get(parameterName.toString()), parameterType))) {
+                            if ((parameterTypeMap.containsKey(parameterName.toString()))) {
                                 //methodList.add(node.getName().toString());
                                 if(!methodUsage.containsKey(methodName)){
                                     methodUsage.put(methodName,methodUsageList);
@@ -119,58 +121,59 @@ class Main {
                                     methodUsage.get(methodName).add(linenumber);
                                 }
 
-                                if(!innerMap.get(parameterType).contains(methodName)){
-                                    innerMap.get(parameterType).add(methodName);
-                                }
                             }
                         }
+                    innerMap.put(parameterType,methodUsage);
                     }
+
                 }
                 return true;
             } // End of MethodInvocation Visit
         }); // End of Block accept
     }
 
-    public void printMap(List paralist, HashMap<String, HashMap<String, List<String>>> outerMap, HashMap<String, List<String>> innerMap,CompilationUnit cu, MethodDeclaration node,HashMap<String,List<Integer>> mU) {
-        int flag=0;
-        if(paralist.size()>0){
-            flag=1;
-        }
-        for (HashMap.Entry<String, HashMap<String, List<String>>> entry : outerMap.entrySet()) {
-            String mainMethod = entry.getKey();
-            System.out.println(""+mainMethod + "() Called at line " +	cu.getLineNumber(node.getStartPosition())+" :-");
-            //System.out.println(");
-            if(flag==1) {
-                System.out.print("--- Paramters ---> ");
-                for (int i = 0; i < paralist.size(); i++) {
-                    if (i == (paralist.size() - 1)) {
-                        System.out.print(paralist.get(i) + ".");
-                    } else {
-                        System.out.print(paralist.get(i) + ", ");
-                    }
-                }
-            } else{
-                System.out.println("--- No Paramters for this method.");
-            }
-        }
-        System.out.println();
-        if(flag==1){
-            if (innerMap.size() == 0) {
-                System.out.println("------ No methods invoked by the parameters.");
-            } else {
-                for (HashMap.Entry<String, List<String>> entry1 : innerMap.entrySet()) {
-                    String key = entry1.getKey();
-                    List<String> values = entry1.getValue();
-                    System.out.println("------ "+key+" calls -> " + values);
-                }
-                for(HashMap.Entry<String, List<Integer>> entry2 : mU.entrySet()){
-                    String key = entry2.getKey();
-                    List<Integer> value = entry2.getValue();
-                    System.out.println("------------- "+key+" called at line(s) -> " + value);
-                }
-            }
-        }
-    }
+//    public void printMap(List paralist, HashMap<String, HashMap<String, HashMap<String, List<Integer>>>> outerMap,
+//                         HashMap<String, HashMap<String, List<Integer>>> innerMap, CompilationUnit cu, MethodDeclaration node, HashMap<String,List<Integer>> mU) {
+//        int flag=0;
+//        if(paralist.size()>0){flag=1;}
+//
+//        for (Map.Entry<String, HashMap<String, HashMap<String, List<Integer>>>> entry : outerMap.entrySet()){
+//            String mainMethod = entry.getKey();
+//            System.out.println(""+mainMethod+"() Called at line " +cu.getLineNumber(node.getStartPosition())+" :-");
+//
+//            if(flag==1) {
+//                System.out.print("--- Paramters ---> ");
+//                for (int i = 0; i < paralist.size(); i++) {
+//                    if (i == (paralist.size() - 1)) {
+//                        System.out.print(paralist.get(i) + ".");
+//                    } else {
+//                        System.out.print(paralist.get(i) + ", ");
+//                    }
+//                }
+//            } else{
+//                System.out.println("--- No Paramters for this method.");
+//            }
+//        }
+//
+//        System.out.println();
+//
+//        if(flag==1){
+//            if (innerMap.size() == 0) {
+//                System.out.println("------ No methods invoked by the parameters.");
+//            } else {
+//                for (Map.Entry<String, HashMap<String, List<Integer>>> entry1 : innerMap.entrySet()) {
+//                    String key = entry1.getKey();
+//                    List<String> values = entry1.getValue();
+//                    System.out.println("------ "+key+" calls -> " + values);
+//                }
+//                for(HashMap.Entry<String, List<Integer>> entry2 : mU.entrySet()){
+//                    String key = entry2.getKey();
+//                    List<Integer> value = entry2.getValue();
+//                    System.out.println("------------- "+key+" called at line(s) -> " + value);
+//                }
+//            }
+//        }
+//    }
 
 
 
@@ -198,8 +201,8 @@ class Main {
                 parameterList = node.parameters();
                 parameterTypeMap = new HashMap<>();
 
-                HashMap<String, HashMap<String, List<String>>> outerMap = new HashMap<>();
-                HashMap<String, List<String>> innerMap = new HashMap<>();
+                HashMap<String, HashMap<String, HashMap<String, List<Integer>>>> outerMap = new HashMap<>();
+                HashMap<String, HashMap<String, List<Integer>>> innerMap = new HashMap<>();
                 HashMap<String, List<Integer>> methodUsage = new HashMap<>();
 
                 main.mapParameterNameToType(parameterList, parameterTypeMap, node);
@@ -216,8 +219,9 @@ class Main {
                     methodUsage.remove(null);
                 }
 
-                main.printMap(parameterList, outerMap, innerMap,cu,node,methodUsage);
+//                main.printMap(parameterList, outerMap, innerMap,cu,node,methodUsage);
 
+                System.out.println(outerMap);
                 return false;
             }// End of MethodDeclaration Visit
         });

@@ -15,7 +15,7 @@ import java.util.Iterator;
 /**
  * Created by snigdhc on 22/2/17.
  */
-public class Samps {
+public class GitFileTreeWalk {
 
     public static void main(String[] args) throws IOException, GitAPIException {
         FileRepositoryBuilder builder = new FileRepositoryBuilder();
@@ -38,12 +38,12 @@ public class Samps {
                     while (treeWalk.next()) {
 
                         String file = treeWalk.getNameString();
-                      //  if (file.endsWith(".java")) {
-                            System.out.println("found: " + treeWalk.getPathString());
+                       if (file.endsWith(".java")) {
+                          System.out.println("found: " + treeWalk.getPathString());
+                        }
                           //  System.out.println(as);
-                       // }
+                        }
                     }
                 }
             }
         }
-    }

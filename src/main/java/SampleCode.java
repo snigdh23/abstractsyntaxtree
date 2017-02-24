@@ -12,6 +12,7 @@ public class SampleCode {
 
     int fact(int n, SampleCode f, String sa){
         f.faa(name);
+        f.add(2,3);
         sa.toUpperCase();
         sa.toLowerCase();
         if(n<=1){

@@ -5,7 +5,7 @@ import java.io.InputStreamReader;
 /**
  * Created by snigdhc on 23/2/17.
  */
-public class Temp {
+public class FileCopyFromHDFS {
     public static void main(String[] args) throws IOException, InterruptedException{
         String hdfspath="";
         String localpath="";
