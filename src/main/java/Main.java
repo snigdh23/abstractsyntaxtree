@@ -2,19 +2,20 @@
  * Created by snigdhc on 16/2/17.
  */
 
-import org.eclipse.jdt.core.dom.ASTParser;
-import org.eclipse.jdt.core.dom.MethodDeclaration;
-import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
-import org.eclipse.jdt.core.dom.Block;
-import org.eclipse.jdt.core.dom.ASTVisitor;
-import org.eclipse.jdt.core.dom.SimpleName;
-import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.CompilationUnit;
+import com.google.gson.Gson;
+import org.apache.hadoop.util.hash.Hash;
+import org.eclipse.jdt.core.dom.*;
+import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.action.ActionResponse;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
+//import org.elasticsearch.transport.client.PreBuiltTransportClient;
 
 import java.io.*;
 
+import java.net.InetAddress;
 import java.util.*;
 
 //import org.eclipse
@@ -28,11 +29,12 @@ class Main {
     /**.
      * Declaring List and HashMap variable for storing the parameters used and storing (parametername,parameterType)
      */
+    static String fileName;
     private static List parameterList;
-    private static HashMap<String, String> parameterTypeMap;
+    private static HashMap<String, String> parameterTypeMap = new HashMap<>(); /* private static HashMap<String, String> parameterTypeMap; */
 
     public void copyingFilesFromHDFS() throws IOException,InterruptedException{
-        String cmd = "man pipe";
+        String cmd = "ls -al";
         Runtime run = Runtime.getRuntime();
         Process pr = run.exec(cmd);
         pr.waitFor();
@@ -50,7 +52,8 @@ class Main {
      */
 
     public static char[] readFile() throws IOException{
-        File file = new File("/home/snigdhc/Projects/AST/src/main/java/SampleCode.java");
+        fileName = "/home/snigdhc/Projects/AST/src/main/java/Main.java";
+        File file = new File(fileName);
         FileReader fileReader;
         fileReader = new FileReader(file);
         int size = (int) file.length();
@@ -79,151 +82,114 @@ class Main {
         for (int i = 0; i < paramList.size(); i++) {
             String parameterName = paramList.get(i).toString();
             String parameterType = ((SingleVariableDeclaration) node.parameters().get(i)).getType().toString();
+            Type t1 = (((SingleVariableDeclaration) node.parameters().get(i)).getType());
+            Class c = ((node.parameters().get(i))).getClass();
+            //System.out.println(((SingleVariableDeclaration) node.parameters().get(i))+".......");
             String actualparametername = parameterName.substring(parameterType.length() + 1);
+            //System.out.println(node.parameters().get(i).getClass());
             paramterTypeMap.put(actualparametername, parameterType);
 
         } // End of paramterlist for loop
     }
 
-    public void checkingMethodInvocation(MethodDeclaration node,final HashMap<String, HashMap<String, List<Integer>>> innerMap,
-                                         final CompilationUnit compilationUnit,final HashMap<String,List<Integer>> methodUsage){
-        Block block = node.getBody();
+    public void checkingMethodInvocation(MethodDeclaration node, final CompilationUnit compilationUnit,
+     final HashMap<String,HashMap<String, List<Integer>>> inner) {
+        //node is the entire method and block gets the code inside the method
+        final Block block = node.getBody();
+
         block.accept(new ASTVisitor() {
             public boolean visit(MethodInvocation node) {
 
-                List<String> methodList = new ArrayList<>();
-                HashMap<String,List<Integer>> mL = new HashMap<>();
-                List<Integer> methodUsageList = new ArrayList<>();
+                List<Integer> methodList = new ArrayList<>();
+                HashMap<String, List<Integer>> methodU = new HashMap<>();
+                Expression paramterName = node.getExpression();//Gives me the parameter calling the method
+                if (paramterName != null) { //checking if methodcalled by a parameter or not
 
-                Expression parameterName = node.getExpression();
-
-                if (parameterName != null) {
-
-                    String parameterType = parameterTypeMap.get(parameterName.toString());
-                    String methodName=(node.getName().toString());
-
-                    if(!innerMap.containsKey(parameterType)){
-                        //innerMap.put(parameterType,methodList);
-                    }
-
-
+                    String parameterType = parameterTypeMap.get(paramterName.toString());
+                    int linenumber = compilationUnit.getLineNumber(node.getStartPosition());
                     if (parameterType != null) {
-                        if (innerMap.containsKey(parameterType)) {
-                            if ((parameterTypeMap.containsKey(parameterName.toString()))) {
-                                //methodList.add(node.getName().toString());
-                                if(!methodUsage.containsKey(methodName)){
-                                    methodUsage.put(methodName,methodUsageList);
-                                }
 
-                                int linenumber=compilationUnit.getLineNumber(node.getStartPosition());
+                        if (!inner.containsKey(parameterType)) {
+                            String na = String.valueOf(node.getExpression());
+                            //System.out.println(na+" "+parameterType);
+                            inner.put(parameterType, methodU);
+                            inner.get(parameterType).put(node.getName().toString(), methodList);
+                            inner.get(parameterType).get(node.getName().toString()).add(linenumber);
+                        }
+                        else {
 
-                                if(methodUsage.containsKey(methodName)){
-                                    methodUsage.get(methodName).add(linenumber);
-                                }
-
+                            if (!inner.get(parameterType).containsKey(node.getName().toString())) {
+                                String na = parameterType.getClass().toString();
+                                inner.get(parameterType).put(node.getName().toString(), methodList);
+                                inner.get(parameterType).get(node.getName().toString()).add(linenumber);
+                            }
+                             else {
+                                inner.get(parameterType).get(node.getName().toString()).add(linenumber);
                             }
                         }
-                    innerMap.put(parameterType,methodUsage);
-                    }
-
+                    }//checking if methodcalled by a parameter is null or not
                 }
                 return true;
             } // End of MethodInvocation Visit
         }); // End of Block accept
     }
 
-//    public void printMap(List paralist, HashMap<String, HashMap<String, HashMap<String, List<Integer>>>> outerMap,
-//                         HashMap<String, HashMap<String, List<Integer>>> innerMap, CompilationUnit cu, MethodDeclaration node, HashMap<String,List<Integer>> mU) {
-//        int flag=0;
-//        if(paralist.size()>0){flag=1;}
-//
-//        for (Map.Entry<String, HashMap<String, HashMap<String, List<Integer>>>> entry : outerMap.entrySet()){
-//            String mainMethod = entry.getKey();
-//            System.out.println(""+mainMethod+"() Called at line " +cu.getLineNumber(node.getStartPosition())+" :-");
-//
-//            if(flag==1) {
-//                System.out.print("--- Paramters ---> ");
-//                for (int i = 0; i < paralist.size(); i++) {
-//                    if (i == (paralist.size() - 1)) {
-//                        System.out.print(paralist.get(i) + ".");
-//                    } else {
-//                        System.out.print(paralist.get(i) + ", ");
-//                    }
-//                }
-//            } else{
-//                System.out.println("--- No Paramters for this method.");
-//            }
-//        }
-//
-//        System.out.println();
-//
-//        if(flag==1){
-//            if (innerMap.size() == 0) {
-//                System.out.println("------ No methods invoked by the parameters.");
-//            } else {
-//                for (Map.Entry<String, HashMap<String, List<Integer>>> entry1 : innerMap.entrySet()) {
-//                    String key = entry1.getKey();
-//                    List<String> values = entry1.getValue();
-//                    System.out.println("------ "+key+" calls -> " + values);
-//                }
-//                for(HashMap.Entry<String, List<Integer>> entry2 : mU.entrySet()){
-//                    String key = entry2.getKey();
-//                    List<Integer> value = entry2.getValue();
-//                    System.out.println("------------- "+key+" called at line(s) -> " + value);
-//                }
-//            }
-//        }
-//    }
 
-
-
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
 
         final Main main = new Main();
-
+        final HashMap<String, HashMap<String, HashMap<String, List<Integer>>>> outerMap = new HashMap<>();
+        HashMap<String,HashMap<String, HashMap<String, HashMap<String, List<Integer>>>>> resultantMap = new HashMap<>();
         ASTParser parser = ASTParser.newParser(AST.JLS3);
         parser.setSource(readFile());
         main.settingParsers(parser);
+
+//        Client client = TransportClient.builder().build()
+//                .addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName("localhost"), 9300));
+
 
         final CompilationUnit cu = (CompilationUnit) parser.createAST(null);
 
         cu.accept(new ASTVisitor() {
 
 
-            Set names = new HashSet();
+//          Set names = new HashSet();
 
-            public boolean visit(MethodDeclaration node) {
-                //System.out.println(cu.get);
+            public boolean visit(MethodDeclaration node) { //Enters every method
+
                 System.out.println();
                 SimpleName name = node.getName();
-                this.names.add(name.getIdentifier());
-
+//              this.names.add(name.getIdentifier());
+//                System.out.println(name);
                 parameterList = node.parameters();
-                parameterTypeMap = new HashMap<>();
-
-                HashMap<String, HashMap<String, HashMap<String, List<Integer>>>> outerMap = new HashMap<>();
-                HashMap<String, HashMap<String, List<Integer>>> innerMap = new HashMap<>();
-                HashMap<String, List<Integer>> methodUsage = new HashMap<>();
-
+                System.out.println(parameterList);
+                HashMap<String,HashMap<String,List<Integer>>> innerMap = new HashMap<>();
                 main.mapParameterNameToType(parameterList, parameterTypeMap, node);
-
-                main.checkingMethodInvocation(node, innerMap, cu,methodUsage);
-
-                outerMap.put(name.toString(), innerMap);
+                main.checkingMethodInvocation(node,cu,innerMap);
 
                 if(innerMap.keySet().contains(null)){
                     innerMap.remove(null);
                 }
 
-                if(methodUsage.keySet().contains(null)){
-                    methodUsage.remove(null);
-                }
+                //System.out.println(innerMap);
 
-//                main.printMap(parameterList, outerMap, innerMap,cu,node,methodUsage);
-
-                System.out.println(outerMap);
+                outerMap.put(name.toString(),innerMap);
                 return false;
             }// End of MethodDeclaration Visit
         });
+        resultantMap.put("Main",outerMap);
+        int a = 10;
+
+
+//        Gson gson = new Gson();
+//        String json = gson.toJson(resultantMap);
+//        IndexResponse indexResponse = client.prepareIndex("parsing","java").setSource(json).get();
+//        String _index = indexResponse.getIndex();
+//// Type name
+//        String _type = indexResponse.getType();
+//// Document ID (generated or not)
+//        String _id = indexResponse.getId();
+//        System.out.println(_index+" "+_type+" "+_id);
+//        client.close();
     }
 }

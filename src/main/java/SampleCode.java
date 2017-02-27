@@ -11,7 +11,7 @@ public class SampleCode {
     }
 
     int fact(int n, SampleCode f, String sa){
-        f.faa(name);
+        f.faa(name,"asd");
         f.add(2,3);
         sa.toUpperCase();
         sa.toLowerCase();
@@ -23,9 +23,18 @@ public class SampleCode {
         }
     } //fact end
 
-    int add(int a, int b){ return(a+b);}
+    int add(int a, int b){
+        return(a+b);
+    }
 
-    String faa(String a){ a.toUpperCase(); a.toLowerCase(); return(a); }
+    String faa(String a,String b){
+        a.toUpperCase();
+        b.toUpperCase();
+        b.toLowerCase();
+        a.toLowerCase();
+        b.toString();
+        return(a);
+    }
 
     public static void main(String args[]){
 
@@ -34,7 +43,7 @@ public class SampleCode {
         ft.name = "UN DOS TRES";
         int result = ft.fact(6,ft,"Skyfall");
         System.out.println(result);
-        String la = ft.faa("Hola");
+        String la = ft.faa("Hola","ASd");
         System.out.println(la);
         int rs = ft.add(3,4);
         System.out.println(rs);
