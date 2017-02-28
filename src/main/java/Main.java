@@ -33,17 +33,6 @@ class Main {
     private static List parameterList;
     private static HashMap<String, String> parameterTypeMap = new HashMap<>(); /* private static HashMap<String, String> parameterTypeMap; */
 
-    public void copyingFilesFromHDFS() throws IOException,InterruptedException{
-        String cmd = "ls -al";
-        Runtime run = Runtime.getRuntime();
-        Process pr = run.exec(cmd);
-        pr.waitFor();
-        BufferedReader buf = new BufferedReader(new InputStreamReader(pr.getInputStream()));
-        String line = "";
-        while ((line = buf.readLine()) != null) {
-            System.out.println(line);
-        }
-    }
 
     /**
      * Reading the Input File to be parsed
@@ -82,13 +71,8 @@ class Main {
         for (int i = 0; i < paramList.size(); i++) {
             String parameterName = paramList.get(i).toString();
             String parameterType = ((SingleVariableDeclaration) node.parameters().get(i)).getType().toString();
-            Type t1 = (((SingleVariableDeclaration) node.parameters().get(i)).getType());
-            Class c = ((node.parameters().get(i))).getClass();
-            //System.out.println(((SingleVariableDeclaration) node.parameters().get(i))+".......");
             String actualparametername = parameterName.substring(parameterType.length() + 1);
-            //System.out.println(node.parameters().get(i).getClass());
             paramterTypeMap.put(actualparametername, parameterType);
-
         } // End of paramterlist for loop
     }
 
@@ -111,7 +95,6 @@ class Main {
 
                         if (!inner.containsKey(parameterType)) {
                             String na = String.valueOf(node.getExpression());
-                            //System.out.println(na+" "+parameterType);
                             inner.put(parameterType, methodU);
                             inner.get(parameterType).put(node.getName().toString(), methodList);
                             inner.get(parameterType).get(node.getName().toString()).add(linenumber);
@@ -140,29 +123,26 @@ class Main {
         final Main main = new Main();
         final HashMap<String, HashMap<String, HashMap<String, List<Integer>>>> outerMap = new HashMap<>();
         HashMap<String,HashMap<String, HashMap<String, HashMap<String, List<Integer>>>>> resultantMap = new HashMap<>();
-        ASTParser parser = ASTParser.newParser(AST.JLS3);
+        ASTParser parser = ASTParser.newParser(AST.JLS8);
         parser.setSource(readFile());
         main.settingParsers(parser);
 
-//        Client client = TransportClient.builder().build()
-//                .addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName("localhost"), 9300));
+        new FileCopyFromHDFS().getFiles();
+
+        Client client = TransportClient.builder().build()
+                .addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName("localhost"), 9300));
 
 
         final CompilationUnit cu = (CompilationUnit) parser.createAST(null);
 
         cu.accept(new ASTVisitor() {
-
-
-//          Set names = new HashSet();
-
             public boolean visit(MethodDeclaration node) { //Enters every method
+
 
                 System.out.println();
                 SimpleName name = node.getName();
-//              this.names.add(name.getIdentifier());
-//                System.out.println(name);
+
                 parameterList = node.parameters();
-                System.out.println(parameterList);
                 HashMap<String,HashMap<String,List<Integer>>> innerMap = new HashMap<>();
                 main.mapParameterNameToType(parameterList, parameterTypeMap, node);
                 main.checkingMethodInvocation(node,cu,innerMap);
@@ -181,15 +161,9 @@ class Main {
         int a = 10;
 
 
-//        Gson gson = new Gson();
-//        String json = gson.toJson(resultantMap);
-//        IndexResponse indexResponse = client.prepareIndex("parsing","java").setSource(json).get();
-//        String _index = indexResponse.getIndex();
-//// Type name
-//        String _type = indexResponse.getType();
-//// Document ID (generated or not)
-//        String _id = indexResponse.getId();
-//        System.out.println(_index+" "+_type+" "+_id);
-//        client.close();
+        Gson gson = new Gson();
+        String json = gson.toJson(resultantMap);
+        IndexResponse indexResponse = client.prepareIndex("parsing","java").setSource(json).get();
+        client.close();
     }
 }
