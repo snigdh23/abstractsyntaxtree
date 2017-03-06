@@ -7,6 +7,8 @@ import java.io.InputStreamReader;
  */
 public class FileCopyFromHDFS {
     public void getFiles() throws  IOException, InterruptedException{
+        Package[] packages = Package.getPackages();
+        System.out.println(packages);
         String hdfspath="";
         String localpath="";
         String cmd = "hdfs dfs -copyToLocal "+hdfspath+" "+ localpath;

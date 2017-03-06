@@ -3,89 +3,63 @@
  */
 
 import java.io.*;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
 
-import org.apache.commons.compress.archivers.ArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.hadoop.fs.*;
-import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.util.Progressable;
 import org.apache.spark.SparkConf;
-import org.apache.spark.SparkContext;
-import org.apache.spark.api.java.function.FlatMapFunction;
+import org.apache.spark.api.java.function.Function;
 import org.apache.spark.input.PortableDataStream;
-import scala.Function1;
-import scala.Tuple2;
 
-import com.google.common.base.Charsets;
 import org.apache.spark.api.java.*;
-import org.apache.spark.SparkConf;
-import org.apache.spark.input.PortableDataStream;
-
-import org.apache.hadoop.fs.Hdfs;
-
-import javax.security.auth.login.AppConfigurationEntry;
-import javax.security.auth.login.Configuration;
+import org.eclipse.jgit.api.errors.GitAPIException;
 
 public class UnTarFile {
-    final static int BUFFER = 2048;
 
+    public String unTarringFiles(String filePath) throws IOException, GitAPIException, InterruptedException {
+        Path path = new Path(filePath);
+        String fileDestination="/home/snigdhc/TarFiles/Jaa/";
+        String pathName = path.getName();
+        String repoDestination = fileDestination+(pathName.substring(0,pathName.indexOf(".tar.gz")))+"/.git";
+        File file = new File(repoDestination);
+        if(!file.exists()){
+        String cmd = "tar -xvf "+filePath+" -C "+fileDestination;
+        Runtime run = Runtime.getRuntime();
+        Process pr = run.exec(cmd);
+        pr.waitFor();
+        }
+        return repoDestination;
+    }
 
+    public void doParsing(HashMap<String,String> filePathContentMap) throws InterruptedException, ExecutionException, IOException {
+        for(String key:filePathContentMap.keySet()){
+            String value = filePathContentMap.get(key);
+            new Main().mainProcess(key,value);
+        }
+    }
 
-    public static void main(String[] args) throws IOException, URISyntaxException {
+    public static void main(String args[]) throws IOException, URISyntaxException, ExecutionException, InterruptedException {
 
         SparkConf conf = new SparkConf();
-        List<File> list = new ArrayList<>();
-        JavaSparkContext sc = new JavaSparkContext("local", "test", conf);
-        JavaPairRDD<String, PortableDataStream> rdd = sc.binaryFiles("/home/snigdhc/*.tar.gz");
-        JavaRDD String = rdd.flatMap(new FlatMapFunction() {
+        JavaSparkContext sparkContext = new JavaSparkContext("local", "test", conf);
+        JavaPairRDD<String, PortableDataStream> rdd1 = sparkContext.binaryFiles("/home/snigdhc/TarFiles/*.tar.gz");
+
+        List<String> zippedFileList = rdd1.keys().collect();
+
+        JavaRDD<String> rdd2 = sparkContext.parallelize(zippedFileList,zippedFileList.size()).map(new Function<String, String>() {
             @Override
-            public Iterator call(Object o) throws Exception {
-                    return null;
+            public String call(String v1) throws Exception {
+                String properJavaFilePath = v1.substring(v1.lastIndexOf(":")+1);
+                UnTarFile utf = new UnTarFile();
+                String repositoryDestination = utf.unTarringFiles(properJavaFilePath);
+                HashMap<String,String> javaFileContentMap = new GitFileTreeWalk().getJavaFilesFromGitRepo(repositoryDestination);
+                if(javaFileContentMap.size()>0)
+                    utf.doParsing(javaFileContentMap);
+                return (repositoryDestination);
             }
-            });
-                //System.out.println(rdd.);
-
-System.out.println(rdd.first()._1());                //sc.para
-                //sc.stop();
-                System.out.println("Starts");
-
-        FileInputStream fin = new FileInputStream("/home/snigdhc/JavaCodes.tar.gz");
-        BufferedInputStream in = new BufferedInputStream(fin);
-        GzipCompressorInputStream gzIn = new GzipCompressorInputStream(fin);
-        TarArchiveInputStream tarIn = new TarArchiveInputStream(gzIn);
-        TarArchiveEntry entry = null;
-
-        /** Read the tar entries using the getNextEntry method **/
-
-        // sc.binaryFiles() => map{ something }
-        // PortableDataStream pds = new PortableDataStream();
-
-
-        while ((entry = (TarArchiveEntry) tarIn.getNextEntry()) != null) {
-
-            if (!entry.isDirectory()) {
-                String name = entry.getName();
-                Path path = new Path(entry.getName());
-                if(name.endsWith(".java"))
-                    System.out.println("Extracting: "+path.getName());
-            }
-
-   else {
-
-
-
-            }
-        }
-        /** Close the input stream **/
-
-        tarIn.close();
-                System.out.println("untar completed successfully!!");
+        });
+        rdd2.count();
+        sparkContext.close();
      }
 }
