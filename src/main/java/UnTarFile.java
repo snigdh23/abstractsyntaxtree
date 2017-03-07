@@ -41,9 +41,17 @@ public class UnTarFile {
 
     public static void main(String args[]) throws IOException, URISyntaxException, ExecutionException, InterruptedException {
 
+        Scanner sc = new Scanner(System.in);
+        System.out.print("Please enter the HDFS Local Path here: ");
+        String hdfsPath = sc.next();
+        System.out.print("Please enter the Local File Path here: ");
+        String localPath = sc.next();
+        FileCopyFromHDFS fileCopyFromHDFS = new FileCopyFromHDFS();
+        fileCopyFromHDFS.getFiles(localPath,hdfsPath);
+
         SparkConf conf = new SparkConf();
         JavaSparkContext sparkContext = new JavaSparkContext("local", "test", conf);
-        JavaPairRDD<String, PortableDataStream> rdd1 = sparkContext.binaryFiles("/home/snigdhc/TarFiles/*.tar.gz");
+        JavaPairRDD<String, PortableDataStream> rdd1 = sparkContext.binaryFiles(localPath);
 
         List<String> zippedFileList = rdd1.keys().collect();
 

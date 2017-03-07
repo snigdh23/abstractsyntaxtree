@@ -6,11 +6,10 @@ import java.io.InputStreamReader;
  * Created by snigdhc on 23/2/17.
  */
 public class FileCopyFromHDFS {
-    public void getFiles() throws  IOException, InterruptedException{
+    public void getFiles(String localpath, String hdfspath) throws  IOException, InterruptedException{
+
         Package[] packages = Package.getPackages();
         System.out.println(packages);
-        String hdfspath="";
-        String localpath="";
         String cmd = "hdfs dfs -copyToLocal "+hdfspath+" "+ localpath;
         Runtime run = Runtime.getRuntime();
         Process pr = run.exec(cmd);
