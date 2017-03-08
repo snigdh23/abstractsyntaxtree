@@ -19,7 +19,7 @@ import java.util.concurrent.ExecutionException;
  * Parsing of Java Code
  **/
 
-class Main {
+class JavaParser {
 
     /**
      * Declaring List and HashMap variable for storing the parameters used and storing (parametername,parameterType)
@@ -98,7 +98,7 @@ class Main {
 
 
     public String mainProcess(String filePath,String content) throws IOException, InterruptedException, ExecutionException {
-        final Main main = new Main();
+        final JavaParser javaParser = new JavaParser();
 
         int lastIndex = filePath.lastIndexOf('/');
 
@@ -112,7 +112,7 @@ class Main {
 
         char[] sourcecontent = content.toCharArray();
         parser.setSource(sourcecontent);
-        main.settingParsers(parser);
+        javaParser.settingParsers(parser);
 
         final CompilationUnit compilationUnit = (CompilationUnit) parser.createAST(null);
 
@@ -124,8 +124,8 @@ class Main {
                 paramtersListLength = node.parameters().size();
                 if(paramtersListLength >0) {
                     HashMap<String, HashMap<String, List<Integer>>> innerMap = new HashMap<>();
-                    main.mapParameterNameToType(parametersList, parameterTypeMap, node);
-                    flag = main.checkingMethodInvocation(node, compilationUnit, innerMap);
+                    javaParser.mapParameterNameToType(parametersList, parameterTypeMap, node);
+                    flag = javaParser.checkingMethodInvocation(node, compilationUnit, innerMap);
                     if (innerMap.keySet().contains(null)) {
                         innerMap.remove(null);
                     }
