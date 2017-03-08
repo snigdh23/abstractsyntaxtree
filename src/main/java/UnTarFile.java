@@ -35,7 +35,7 @@ public class UnTarFile {
     public void doParsing(HashMap<String,String> filePathContentMap) throws InterruptedException, ExecutionException, IOException {
         for(String key:filePathContentMap.keySet()){
             String value = filePathContentMap.get(key);
-            new Main().mainProcess(key,value);
+            new JavaParser().mainProcess(key,value);
         }
     }
 
@@ -50,7 +50,7 @@ public class UnTarFile {
         fileCopyFromHDFS.getFiles(localPath,hdfsPath);
 
         SparkConf conf = new SparkConf();
-        JavaSparkContext sparkContext = new JavaSparkContext("local", "test", conf);
+        SparkContext sparkContext = new JavaSparkContext("local", "test", conf);
         JavaPairRDD<String, PortableDataStream> rdd1 = sparkContext.binaryFiles(localPath);
 
         List<String> zippedFileList = rdd1.keys().collect();
