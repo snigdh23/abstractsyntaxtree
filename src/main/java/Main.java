@@ -15,7 +15,7 @@ import org.apache.spark.input.PortableDataStream;
 import org.apache.spark.api.java.*;
 import org.eclipse.jgit.api.errors.GitAPIException;
 
-public class UnTarFile {
+public class Main {
 
     public String unTarringFiles(String filePath) throws IOException, GitAPIException, InterruptedException {
         Path path = new Path(filePath);
@@ -59,11 +59,11 @@ public class UnTarFile {
             @Override
             public String call(String v1) throws Exception {
                 String properJavaFilePath = v1.substring(v1.lastIndexOf(":")+1);
-                UnTarFile utf = new UnTarFile();
-                String repositoryDestination = utf.unTarringFiles(properJavaFilePath);
+                Main main = new Main();
+                String repositoryDestination = main.unTarringFiles(properJavaFilePath);
                 HashMap<String,String> javaFileContentMap = new GitFileTreeWalk().getJavaFilesFromGitRepo(repositoryDestination);
                 if(javaFileContentMap.size()>0)
-                    utf.doParsing(javaFileContentMap);
+                    main.doParsing(javaFileContentMap);
                 return (repositoryDestination);
             }
         });
